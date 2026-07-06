@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/task.dart';
 
-class FirestoreService {
+class TaskRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Collection reference
