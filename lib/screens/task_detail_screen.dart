@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/task.dart';
-import '../services/firestore_service.dart';
+import '../repositories/task_repository.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final Task task;
@@ -11,10 +11,12 @@ class TaskDetailScreen extends StatefulWidget {
 }
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
-  final FirestoreService _firestore = FirestoreService();
+  final TaskRepository _repo = TaskRepository();
   late TextEditingController _titleController;
   late TextEditingController _descController;
-  late String _selectedStatus;
+  late TaskStatus _selectedStatus;
+  late TaskPriority _selectedPriority;
+  DateTime? _selectedDueDate;
 
   @override
   void initState() {
@@ -22,6 +24,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     _titleController = TextEditingController(text: widget.task.title);
     _descController = TextEditingController(text: widget.task.description);
     _selectedStatus = widget.task.status;
+    _selectedPriority = widget.task.priority;
+    _selectedDueDate = widget.task.dueDate;
   }
 
   @override
@@ -31,7 +35,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     super.dispose();
   }
 
-  // Update the task
   void _updateTask() async {
     if (_titleController.text.isEmpty) return;
     final updatedTask = Task(
@@ -39,15 +42,16 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       title: _titleController.text.trim(),
       description: _descController.text.trim(),
       status: _selectedStatus,
+      priority: _selectedPriority,
       assignedTo: widget.task.assignedTo,
       createdAt: widget.task.createdAt,
       updatedAt: DateTime.now(),
+      dueDate: _selectedDueDate,
     );
-    await _firestore.updateTask(updatedTask);
-    if (mounted) Navigator.pop(context, true); // return true to refresh
+    await _repo.updateTask(updatedTask);
+    if (mounted) Navigator.pop(context, true);
   }
 
-  // Delete the task
   void _deleteTask() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -68,7 +72,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       ),
     );
     if (confirm == true) {
-      await _firestore.deleteTask(widget.task.id);
+      await _repo.deleteTask(widget.task.id);
       if (mounted) Navigator.pop(context, true);
     }
   }
@@ -86,12 +90,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
@@ -100,8 +103,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Description
             TextField(
               controller: _descController,
               decoration: const InputDecoration(
@@ -111,19 +112,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               maxLines: 5,
             ),
             const SizedBox(height: 16),
-
-            // Status dropdown
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<TaskStatus>(
               value: _selectedStatus,
               decoration: const InputDecoration(
                 labelText: 'Status',
                 border: OutlineInputBorder(),
               ),
-              items: const [
-                DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                DropdownMenuItem(value: 'in progress', child: Text('In Progress')),
-                DropdownMenuItem(value: 'completed', child: Text('Completed')),
-              ],
+              items: TaskStatus.values.map((status) {
+                return DropdownMenuItem(
+                  value: status,
+                  child: Text(status.label),
+                );
+              }).toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedStatus = value!;
@@ -131,8 +131,55 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               },
             ),
             const SizedBox(height: 16),
-
-            // Assigned to (read‑only)
+            DropdownButtonFormField<TaskPriority>(
+              value: _selectedPriority,
+              decoration: const InputDecoration(
+                labelText: 'Priority',
+                border: OutlineInputBorder(),
+              ),
+              items: TaskPriority.values.map((priority) {
+                return DropdownMenuItem(
+                  value: priority,
+                  child: Text(priority.name[0].toUpperCase() + priority.name.substring(1)),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedPriority = value!;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _selectedDueDate == null
+                        ? 'No Due Date Selected'
+                        : 'Due Date: ${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year}',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDueDate ?? DateTime.now(),
+                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _selectedDueDate = picked;
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_today),
+                  label: const Text('Change Date'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Text(
               'Assigned to: ${widget.task.assignedTo}',
               style: const TextStyle(color: Colors.grey),
@@ -147,10 +194,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 'Updated: ${widget.task.updatedAt!.toLocal()}',
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
-
-            const Spacer(),
-
-            // Save button
+            const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
