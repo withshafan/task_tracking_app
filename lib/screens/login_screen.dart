@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
+import '../models/user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -11,10 +13,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final AuthService _auth = AuthService();
+  final UserService _userService = UserService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
   bool _isLogin = true; // true = login, false = register
+  bool _isAdmin = false; // only for registration
 
   Future<void> _submit() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -23,28 +28,40 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
+    if (!_isLogin && _nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name.')),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      User? user;
       if (_isLogin) {
-        user = await _auth.signInWithEmail(
+        // Sign in
+        await _auth.signInWithEmail(
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
       } else {
-        user = await _auth.registerWithEmail(
+        // Register
+        User? firebaseUser = await _auth.registerWithEmail(
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
+        if (firebaseUser != null) {
+          // Save user data to Firestore
+          final appUser = AppUser(
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            name: _nameController.text.trim(),
+            isAdmin: _isAdmin,
+          );
+          await _userService.saveUser(appUser);
+        }
       }
-
-      if (user != null && mounted) {
-        // Navigate to home – the splash screen's stream will handle it,
-        // but we'll do it directly for immediate feedback.
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      if (mounted) Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -59,9 +76,10 @@ class _LoginScreenState extends State<LoginScreen> {
   void _toggleMode() {
     setState(() {
       _isLogin = !_isLogin;
-      // Clear fields when switching mode
       _emailController.clear();
       _passwordController.clear();
+      _nameController.clear();
+      _isAdmin = false;
     });
   }
 
@@ -80,6 +98,8 @@ class _LoginScreenState extends State<LoginScreen> {
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
+
+            // Email
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
@@ -90,6 +110,8 @@ class _LoginScreenState extends State<LoginScreen> {
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 15),
+
+            // Password
             TextField(
               controller: _passwordController,
               decoration: const InputDecoration(
@@ -99,6 +121,35 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               obscureText: true,
             ),
+
+            // Extra fields for registration
+            if (!_isLogin) ...[
+              const SizedBox(height: 15),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 15),
+              Row(
+                children: [
+                  const Text('Register as Admin?'),
+                  const Spacer(),
+                  Switch(
+                    value: _isAdmin,
+                    onChanged: (value) {
+                      setState(() {
+                        _isAdmin = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 25),
             SizedBox(
               width: double.infinity,
