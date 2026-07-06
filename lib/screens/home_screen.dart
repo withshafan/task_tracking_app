@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/task.dart';
+import 'task_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -129,8 +130,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? Colors.orange
                             : Colors.grey,
                   ),
-                  onTap: () {
-                    // We'll implement detail/edit later
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TaskDetailScreen(task: task),
+                      ),
+                    );
                   },
                 ),
               );
