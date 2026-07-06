@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/user_service.dart';
 import '../models/task.dart';
 import '../models/user.dart';
 import 'task_detail_screen.dart';
+import 'stats_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,11 +24,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   String _selectedStatus = 'pending';
-  String _selectedAssignee = ''; // email of assigned user
+  String _selectedAssignee = '';
 
   // Current user data
   AppUser? _currentUser;
   bool _isLoadingUser = true;
+
+  // Bottom navigation
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -48,8 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Show dialog to add a new task
   void _showAddTaskDialog() {
-    // If admin, we need a list of interns to assign to
-    // If intern, assign to self
     if (_currentUser == null) return;
 
     showDialog(
@@ -63,20 +65,17 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Title
                   TextField(
                     controller: _titleController,
                     decoration: const InputDecoration(labelText: 'Title'),
                   ),
                   const SizedBox(height: 10),
-                  // Description
                   TextField(
                     controller: _descController,
                     decoration: const InputDecoration(labelText: 'Description'),
                     maxLines: 3,
                   ),
                   const SizedBox(height: 10),
-                  // Status
                   DropdownButtonFormField<String>(
                     value: _selectedStatus,
                     decoration: const InputDecoration(labelText: 'Status'),
@@ -94,7 +93,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   const SizedBox(height: 10),
-                  // Assign to – only shown for admin
                   if (_currentUser!.isAdmin) ...[
                     StreamBuilder<List<AppUser>>(
                       stream: _userService.getAllUsers(),
@@ -105,10 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (!snapshot.hasData) {
                           return const CircularProgressIndicator();
                         }
-                        // Filter out admins (only interns)
                         final interns =
                             snapshot.data!.where((u) => !u.isAdmin).toList();
-                        // Set default if not set
                         if (_selectedAssignee.isEmpty && interns.isNotEmpty) {
                           _selectedAssignee = interns.first.email;
                         }
@@ -133,7 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ] else ...[
-                    // Intern: assign to self (read‑only)
                     Text(
                       'Assign to: ${_currentUser!.email}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -188,41 +183,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Sign out
-  void _signOut() async {
-    await _auth.signOut();
-    if (mounted) Navigator.pushReplacementNamed(context, '/login');
-  }
+  // ---------- Build the three tabs ----------
+  Widget _buildTasksTab() {
+    if (_currentUser == null) return const Center(child: CircularProgressIndicator());
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoadingUser) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    // Determine the stream to use based on role
-    Stream<List<Task>> taskStream;
-    if (_currentUser!.isAdmin) {
-      // Admin sees all tasks
-      taskStream = _firestore.getTasks();
-    } else {
-      // Intern sees only their own tasks
-      taskStream = _firestore.getTasksForUser(_currentUser!.email);
-    }
+    final Stream<List<Task>> taskStream = _currentUser!.isAdmin
+        ? _firestore.getTasks()
+        : _firestore.getTasksForUser(_currentUser!.email);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _currentUser!.isAdmin
-              ? 'All Tasks (Admin)'
-              : 'My Tasks (${_currentUser!.name})',
-        ),
+        title: Text(_currentUser!.isAdmin ? 'All Tasks (Admin)' : 'My Tasks'),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: _signOut,
+            onPressed: () async {
+              await _auth.signOut();
+              if (mounted) Navigator.pushReplacementNamed(context, '/login');
+            },
             tooltip: 'Sign out',
           ),
         ],
@@ -264,7 +243,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         builder: (context) => TaskDetailScreen(task: task),
                       ),
                     );
-                    // The stream will auto‑refresh.
                   },
                 ),
               );
@@ -275,6 +253,50 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTaskDialog,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildStatsTab() {
+    if (_currentUser == null) return const Center(child: CircularProgressIndicator());
+    return StatsScreen(currentUser: _currentUser!);
+  }
+
+  Widget _buildProfileTab() {
+    if (_currentUser == null) return const Center(child: CircularProgressIndicator());
+    return ProfileScreen(currentUser: _currentUser!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoadingUser || _currentUser == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final List<Widget> _pages = [
+      _buildTasksTab(),
+      _buildStatsTab(),
+      _buildProfileTab(),
+    ];
+
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Tasks'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
       ),
     );
   }
