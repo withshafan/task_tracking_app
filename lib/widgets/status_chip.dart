@@ -12,17 +12,30 @@ class StatusChip extends StatelessWidget {
         TaskStatus.pending => AppColors.pending,
       };
 
+  IconData get _icon => switch (status) {
+        TaskStatus.completed => Icons.check_circle_rounded,
+        TaskStatus.inProgress => Icons.bolt_rounded,
+        TaskStatus.pending => Icons.schedule_rounded,
+      };
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.12),
+        color: _color.withAlpha(25),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        status.label,
-        style: TextStyle(color: _color, fontWeight: FontWeight.w600, fontSize: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_icon, size: 13, color: _color),
+          const SizedBox(width: 4),
+          Text(
+            status.label,
+            style: TextStyle(color: _color, fontWeight: FontWeight.w600, fontSize: 11),
+          ),
+        ],
       ),
     );
   }
