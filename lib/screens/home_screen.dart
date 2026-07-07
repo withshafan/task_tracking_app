@@ -310,14 +310,20 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverFillRemaining(child: LoadingShimmer())
           else if (taskProvider.error != null)
             SliverFillRemaining(
+              hasScrollBody: false,
               child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.danger),
-                    const SizedBox(height: 12),
-                    Text('Error: ${taskProvider.error}'),
-                    const SizedBox(height: 12),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.danger),
+                      const SizedBox(height: 16),
+                      SelectableText(
+                        'Error: ${taskProvider.error}',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
                         context.read<TaskProvider>().listenToTasks(
@@ -330,7 +336,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-            )
+            ),
+          )
           else if (filteredTasks.isEmpty)
             SliverFillRemaining(
               child: EmptyState(

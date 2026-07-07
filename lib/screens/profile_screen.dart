@@ -182,6 +182,12 @@ class ProfileScreen extends StatelessWidget {
                     title: 'Built with',
                     subtitle: 'Flutter & Firebase',
                   ),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.favorite_border_rounded,
+                    title: 'Made by',
+                    subtitle: 'withshafan',
+                  ),
 
                   const SizedBox(height: 32),
 

@@ -222,26 +222,37 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    final interns = snapshot.data!.where((u) => !u.isAdmin).toList();
-                    if (_selectedAssignee.isEmpty && interns.isNotEmpty) {
-                      _selectedAssignee = interns.first.email;
+                    final usersList = snapshot.data!;
+                    if (usersList.isEmpty) {
+                      return TextFormField(
+                        initialValue: 'No users available',
+                        enabled: false,
+                        decoration: const InputDecoration(
+                          labelText: 'Assign To',
+                          prefixIcon: Icon(Icons.person_add_outlined),
+                        ),
+                      );
                     }
+                    
+                    // Make sure selected assignee is in the list, else null
+                    final bool isValid = usersList.any((u) => u.email == _selectedAssignee);
+                    final currentValue = isValid ? _selectedAssignee : null;
+
                     return DropdownButtonFormField<String>(
-                      initialValue:
-                          _selectedAssignee.isEmpty && interns.isNotEmpty
-                              ? interns.first.email
-                              : _selectedAssignee,
+                      initialValue: currentValue,
+                      hint: const Text('Select Assignee'),
                       decoration: const InputDecoration(
                         labelText: 'Assign To',
                         prefixIcon: Icon(Icons.person_add_outlined),
                       ),
-                      items: interns.map((user) {
+                      items: usersList.map((user) {
                         return DropdownMenuItem(
                           value: user.email,
                           child: Text('${user.name} (${user.email})'),
                         );
                       }).toList(),
                       onChanged: (v) => setState(() => _selectedAssignee = v!),
+                      validator: (v) => v == null || v.isEmpty ? 'Please select an assignee' : null,
                     );
                   },
                 ),

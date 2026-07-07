@@ -24,7 +24,7 @@ class TaskRepository {
 
   // Get all tasks (real‑time stream)
   Stream<List<Task>> getTasks() {
-    return _tasksCollection.orderBy('createdAt', descending: true).snapshots().map(
+    return _tasksCollection.snapshots().map(
       (snapshot) => snapshot.docs
           .map((doc) => Task.fromMap(doc.id, doc.data() as Map<String, dynamic>))
           .toList(),
@@ -35,7 +35,6 @@ class TaskRepository {
   Stream<List<Task>> getTasksForUser(String userId) {
     return _tasksCollection
         .where('assignedTo', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
