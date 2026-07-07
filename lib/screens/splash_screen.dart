@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
               // App name
               Text(
-                'TaskFlow',
+                'Tracking Task',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,

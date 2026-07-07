@@ -217,7 +217,7 @@ class ProfileScreen extends StatelessWidget {
                   // Footer
                   Center(
                     child: Text(
-                      'TaskFlow © ${DateTime.now().year}',
+                      'Tracking Task © ${DateTime.now().year}',
                       style: TextStyle(
                         color: AppColors.pending.withAlpha(120),
                         fontSize: 12,

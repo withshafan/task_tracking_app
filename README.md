@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="https://img.icons8.com/color/120/000000/task-completed.png" alt="TaskFlow Logo" />
+  <img src="https://img.icons8.com/color/120/000000/task-completed.png" alt="Tracking Task Logo" />
   
-  # TaskFlow
+  # Tracking Task
   **A Premium Task Management & Tracking App built with Flutter & Firebase**
 
   <p align="center">
@@ -15,7 +15,7 @@
 ---
 
 ## 📖 Overview
-**TaskFlow** is a modern, high-performance task management application designed for individuals and teams to effectively organize, assign, and track daily tasks. Featuring a **premium dark-mode UI** built from scratch, the app offers seamless cloud synchronization, role-based access control, and rich data visualization.
+**Tracking Task** is a modern, high-performance task management application designed for individuals and teams to effectively organize, assign, and track daily tasks. Featuring a **premium dark-mode UI** built from scratch, the app offers seamless cloud synchronization, role-based access control, and rich data visualization.
 
 ---
 
@@ -108,5 +108,5 @@ Contributions, issues, and feature requests are welcome! Feel free to check the 
 
 <div align="center">
   <b>Built with ❤️ by withshafan</b><br>
-  TaskFlow © 2026
+  Tracking Task © 2026
 </div>

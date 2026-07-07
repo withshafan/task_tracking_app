@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
 
                   Text(
-                    'TaskFlow',
+                    'Tracking Task',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -177,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               _isLogin
                                   ? 'Sign in to continue managing your tasks'
-                                  : 'Join TaskFlow and start being productive',
+                                  : 'Join Tracking Task and start being productive',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context)
                                         .textTheme
