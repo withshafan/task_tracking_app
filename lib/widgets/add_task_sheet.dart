@@ -222,10 +222,10 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    final usersList = snapshot.data!;
+                    final usersList = snapshot.data!.where((u) => !u.isAdmin).toList();
                     if (usersList.isEmpty) {
                       return TextFormField(
-                        initialValue: 'No users available',
+                        initialValue: 'No interns available',
                         enabled: false,
                         decoration: const InputDecoration(
                           labelText: 'Assign To',
@@ -239,6 +239,7 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                     final currentValue = isValid ? _selectedAssignee : null;
 
                     return DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: currentValue,
                       hint: const Text('Select Assignee'),
                       decoration: const InputDecoration(
@@ -248,7 +249,10 @@ class _AddTaskSheetState extends State<AddTaskSheet> {
                       items: usersList.map((user) {
                         return DropdownMenuItem(
                           value: user.email,
-                          child: Text('${user.name} (${user.email})'),
+                          child: Text(
+                            '${user.name} (${user.email})',
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       }).toList(),
                       onChanged: (v) => setState(() => _selectedAssignee = v!),
